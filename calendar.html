@@ -1,0 +1,687 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>シフト表</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; }
+  table { border-collapse: separate; border-spacing: 0; }
+  th, td { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+  thead th { border-top: 1px solid #e2e8f0; }
+  table tr > th:first-child, table tr > td:first-child { border-left: 1px solid #e2e8f0; }
+  .sticky-left  { position: sticky; left: 0; background: white; z-index: 2; }
+  .sticky-top   { position: sticky; top: 0; background: white; z-index: 3; }
+  .sticky-corner{ position: sticky; left: 0; top: 0; z-index: 4; background: white; }
+  .ok-cell { background: #ecfdf5; color: #047857; }
+  .off-cell { background: #fef2f2; color: #b91c1c; }
+  .none-cell { background: #f8fafc; color: #cbd5e1; }
+
+  /* 週グリッドカレンダー */
+  .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .day-cell-outer { border-left: 1px solid #cbd5e1; border-top: 1px solid #cbd5e1; min-height: 200px; background: white; }
+  .day-cell-inner { display: flex; flex-direction: column; height: 100%; }
+  .day-header { padding: 4px 6px; font-weight: bold; font-size: 14px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+  .day-empty { color: #cbd5e1; }
+  .dept-split { display: grid; grid-template-columns: 1fr 1fr; }
+  .dept-cell { padding: 4px 5px; position: relative; }
+  .dept-cell .dept-label { font-size: 10px; font-weight: 700; opacity: 0.7; margin-bottom: 2px; }
+  .dept-cell .dept-name  { font-size: 11px; line-height: 1.35; color: #1e293b; display: inline-flex; align-items: center; gap: 2px; }
+  .dept-andersen { background: #fdf2f8; color: #9d174d; border-right: 1px solid #e2e8f0; }
+  .dept-cafe     { background: #fffbeb; color: #92400e; }
+  .dept-shikomi  { background: #ecfdf5; color: #047857; border-top: 1px solid #e2e8f0; padding: 4px 5px; position: relative; }
+  .dept-hatake   { background: #f7fee7; color: #4d7c0f; border-top: 1px solid #e2e8f0; padding: 4px 5px; position: relative; }
+  .dept-shikomi .dept-label, .dept-hatake .dept-label { font-size: 10px; font-weight: 700; opacity: 0.7; margin-bottom: 2px; }
+  .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 11px; line-height: 1.35; color: #1e293b; display: inline-flex; align-items: center; gap: 2px; }
+  .dow-header { background: #f8fafc; border: 1px solid #cbd5e1; border-bottom: 0; padding: 6px; text-align: center; font-weight: 700; font-size: 13px; }
+  .dow-mon, .dow-tue, .dow-wed, .dow-thu, .dow-fri { color: #334155; }
+  .dow-sat { color: #0284c7; }
+  .dow-sun { color: #dc2626; }
+  .week-row { border-right: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
+  /* 編集モード */
+  .edit-mode .name-x { display: inline-block; margin-left: 1px; cursor: pointer; color: rgba(0,0,0,0.3); font-size: 9px; }
+  .edit-mode .name-x:hover { color: #dc2626; }
+  .name-x { display: none; }
+  .add-btn { display: none; background: rgba(255,255,255,0.7); border: 1px dashed currentColor; border-radius: 3px; padding: 1px 6px; font-size: 10px; cursor: pointer; margin-top: 2px; }
+  .add-btn:hover { background: rgba(255,255,255,1); }
+  .edit-mode .add-btn { display: inline-block; }
+</style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<div class="max-w-[1600px] mx-auto px-4 py-6">
+
+  <!-- Header -->
+  <header class="flex items-end justify-between flex-wrap gap-3 mb-5">
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-wider">shift view</div>
+      <h1 class="text-2xl font-bold text-slate-900 mt-1" id="title">シフト表</h1>
+      <div class="text-xs text-slate-500 mt-1" id="dataMeta"></div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <label class="text-xs text-slate-500">表示月：</label>
+      <select id="monthSelect" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"></select>
+      <button id="reloadBtn" class="text-xs bg-white border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50">↻ 最新データ取得</button>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="flex border-b border-slate-200 mb-4">
+    <button data-tab="calendar" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-slate-900 text-slate-900">カレンダー</button>
+    <button data-tab="staff" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">スタッフ別一覧</button>
+    <button data-tab="notes" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">共有事項</button>
+  </div>
+
+  <!-- Status -->
+  <div id="status" class="text-sm text-slate-500 py-8 text-center">データ取得中…</div>
+
+  <!-- Calendar view -->
+  <section id="view-calendar" class="hidden">
+    <div class="flex items-center justify-end gap-2 mb-2">
+      <button id="resetBtn" class="hidden text-xs text-slate-500 hover:text-rose-600 underline">スプシから再インポート</button>
+      <button id="editToggle" class="text-xs bg-white border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50">✏️ 編集モード</button>
+    </div>
+    <div id="calendarOuter" class="bg-white border border-slate-200 rounded-xl p-3 sm:p-5">
+      <div id="calendarBox"></div>
+    </div>
+  </section>
+
+  <!-- Slot editor modal -->
+  <div id="slotModal" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-5 max-h-[80vh] overflow-auto">
+      <div class="flex items-center justify-between mb-1">
+        <div class="font-bold text-slate-900" id="slotTitle"></div>
+        <button id="slotClose" class="text-slate-400 hover:text-slate-700">✕</button>
+      </div>
+      <div class="text-xs text-slate-500 mb-3">追加するスタッフをタップ</div>
+      <div id="slotPicker" class="space-y-1 text-sm"></div>
+    </div>
+  </div>
+
+  <!-- Staff list view -->
+  <section id="view-staff" class="hidden">
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-end">
+        <div class="text-xs text-slate-500" id="staffSummary"></div>
+      </div>
+      <div class="overflow-auto max-h-[75vh]">
+        <table id="staffTable" class="text-xs w-full"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notes view -->
+  <section id="view-notes" class="hidden">
+    <div class="bg-white border border-slate-200 rounded-xl p-5">
+      <div id="notesList" class="space-y-3 text-sm"></div>
+    </div>
+  </section>
+
+  <p class="text-xs text-slate-400 text-center mt-6">
+    カレンダー：初回はスプシから自動インポート、以降はブラウザに保存（編集モードで割当変更）<br>
+    スタッフ別一覧・共有事項：「元データ」から自動生成
+  </p>
+</div>
+
+<script>
+// ===== Config =====
+const SHEET_ID = '1Hk6ObN3zLT9-u8SHRaPU28MqTG9laBLy8xmWbO9-QVU';
+const SOURCE_SHEET = '元データ';
+
+const WEEKDAYS = ['日','月','火','水','木','金','土'];
+// 月曜始まりの曜日ラベル
+const WEEKDAYS_MON_START = ['月','火','水','木','金','土','日'];
+const DEPT_COLOR = {
+  'アンデルセン': 'bg-pink-100 text-pink-800',
+  'カフェ':       'bg-amber-100 text-amber-800',
+  '仕込み':       'bg-emerald-100 text-emerald-800',
+  '畑':           'bg-lime-100 text-lime-800',
+};
+
+// ===== Staff master（編集モードのスタッフ選択肢に使う） =====
+const STAFF_MASTER = [
+  '金子まさみ','金子ちなみ','入江さつき','工藤優朔',
+  'ママ','山口もとこ','パパ','鈴木ゆみ','甲斐みゆき',
+  '若山さき','古賀くみこ','竹村りえ','相馬あんな','知念ともみ',
+  '小野寺くうは','小野寺やよい','河原崎みき','伊藤光理'
+];
+
+const DEPT_KEYS = ['andersen','cafe','shikomi','hatake'];
+const DEPT_LABEL = { andersen:'アンデルセン', cafe:'カフェ', shikomi:'仕込み', hatake:'畑' };
+
+// ===== State =====
+let allRows = [];
+let activeMonth = null;
+let activeTab = 'calendar';
+let editMode = false;
+const calendarCache = {};   // monthKey → parsed weeks（スプシから読んだもの）
+const assignments = {};     // monthKey → { dayKey(YYYY-MM-DD) → { andersen:[], cafe:[], shikomi:[], hatake:[] } }
+let pickerTarget = null;    // { dayKey, dept } when modal open
+
+// ===== CSV parser =====
+function parseCSV(text) {
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i+1] === '"') { field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c === '\r') { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+// ===== Date utilities =====
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+function pad(n) { return String(n).padStart(2, '0'); }
+function dateKey(y, m, d) { return `${y}-${pad(m)}-${pad(d)}`; }
+function weekdayOf(y, m, d) { return new Date(y, m - 1, d).getDay(); }
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// ===== 元データ load =====
+async function loadSubmissions() {
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(SOURCE_SHEET)}&_=${Date.now()}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('元データ取得失敗 HTTP ' + res.status);
+  const text = await res.text();
+  const rows = parseCSV(text);
+  if (rows.length < 2) throw new Error('元データが空');
+  const headers = rows[0];
+
+  const idx = {};
+  headers.forEach((h, i) => {
+    const k = (h || '').replace(/\s/g, '');
+    if (k.includes('名前')) idx.name = i;
+    else if (k.includes('メール')) idx.email = i;
+    else if (k.includes('何月')) idx.targetMonth = i;
+    else if (k.includes('共有') || k.includes('要望')) idx.note = i;
+    else if (k.includes('所属')) idx.dept = i;
+  });
+
+  allRows = rows.slice(1)
+    .map(r => {
+      const ngDates = r.map(c => (c || '').trim()).filter(c => /^\d{4}-\d{2}-\d{2}$/.test(c));
+      const allOk = r.some(c => (c || '').includes('全日出勤'));
+      return {
+        name: (r[idx.name] || '').trim(),
+        email: (r[idx.email] || '').trim(),
+        targetMonth: (r[idx.targetMonth] || '').trim(),
+        ngDates, allOk,
+        note: (r[idx.note] || '').trim(),
+        dept: (r[idx.dept] || '').trim(),
+      };
+    })
+    .filter(r => r.name);
+
+  allRows.forEach(r => {
+    const sample = r.ngDates.find(d => /^\d{4}-\d{2}-\d{2}$/.test(d));
+    if (sample) {
+      r.year = parseInt(sample.slice(0, 4), 10);
+      r.month = parseInt(sample.slice(5, 7), 10);
+    } else {
+      const m = r.targetMonth.match(/(\d{1,2})/);
+      if (m) { r.month = parseInt(m[1], 10); r.year = new Date().getFullYear(); }
+    }
+    r.monthKey = r.year && r.month ? `${r.year}-${pad(r.month)}` : null;
+  });
+}
+
+// ===== カレンダーシート fetch & parse =====
+async function loadCalendarSheet(monthKey) {
+  if (calendarCache[monthKey]) return calendarCache[monthKey];
+  const [y, m] = monthKey.split('-');
+  const sheetName = `【${y}年${parseInt(m,10)}月】カレンダー`;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetName)}&_=${Date.now()}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) { calendarCache[monthKey] = null; return null; }
+    const text = await res.text();
+    if (!text || text.length < 10) { calendarCache[monthKey] = null; return null; }
+    const rawRows = parseCSV(text);
+    const weeks = parseCalendarWeeks(rawRows);
+    calendarCache[monthKey] = weeks;
+    return weeks;
+  } catch (e) {
+    console.warn('カレンダーシート読込失敗:', sheetName, e);
+    calendarCache[monthKey] = null;
+    return null;
+  }
+}
+
+// 「日付行」を判定：1個以上の日付（1〜31）があり、かつ非空セルが全て日付（部分週も検出）
+function isDateRow(row) {
+  if (!row) return false;
+  let dateCount = 0, nonEmpty = 0;
+  for (let j = 0; j < row.length; j++) {
+    const v = (row[j] || '').trim();
+    if (!v) continue;
+    nonEmpty++;
+    if (/^\d{1,2}$/.test(v) && parseInt(v,10) >= 1 && parseInt(v,10) <= 31) dateCount++;
+  }
+  return dateCount >= 1 && dateCount === nonEmpty;
+}
+
+function parseCalendarWeeks(rawRows) {
+  const weeks = [];
+  let i = 0;
+  while (i < rawRows.length) {
+    if (isDateRow(rawRows[i])) {
+      const res = parseOneWeek(rawRows, i);
+      weeks.push(res.week);
+      i = res.nextIdx;
+    } else i++;
+  }
+  return weeks;
+}
+
+function parseOneWeek(rawRows, startIdx) {
+  const dateRow = rawRows[startIdx];
+  const dates = [1,3,5,7,9,11,13].map(c => {
+    const v = (dateRow[c] || '').trim();
+    return /^\d{1,2}$/.test(v) ? parseInt(v,10) : null;
+  });
+  const days = Array(7).fill(null).map(() => ({ andersen: [], cafe: [], shikomi: [], hatake: [] }));
+
+  let section = null;
+  let i = startIdx + 1;
+  while (i < rawRows.length && !isDateRow(rawRows[i])) {
+    const row = rawRows[i];
+    const c1 = (row[1] || '').trim();
+    const c2 = (row[2] || '').trim();
+
+    // セクション切替（カラム1見て判定）
+    if (c1 === 'アンデルセン' || c2 === 'カフェ') { section = 'ac'; i++; continue; }
+    if (c1 === '仕込み') { section = 'shikomi'; i++; continue; }
+    if (c1 === '畑')     { section = 'hatake'; i++; continue; }
+
+    if (!section) { i++; continue; }
+
+    // データ行：各日のスタッフ名を拾う
+    for (let d = 0; d < 7; d++) {
+      if (section === 'ac') {
+        const a = (row[1 + d*2] || '').trim();
+        const c = (row[2 + d*2] || '').trim();
+        if (a) days[d].andersen.push(a);
+        if (c) days[d].cafe.push(c);
+      } else if (section === 'shikomi') {
+        const v = (row[1 + d*2] || '').trim();
+        if (v) days[d].shikomi.push(v);
+      } else if (section === 'hatake') {
+        const v = (row[1 + d*2] || '').trim();
+        if (v) days[d].hatake.push(v);
+      }
+    }
+    i++;
+  }
+  return { week: { dates, days }, nextIdx: i };
+}
+
+// ===== Month selector =====
+function populateMonthSelector() {
+  const monthSet = new Set(allRows.map(r => r.monthKey).filter(Boolean));
+  const countByMonth = {};
+  allRows.forEach(r => { if (r.monthKey) countByMonth[r.monthKey] = (countByMonth[r.monthKey] || 0) + 1; });
+  const now = new Date();
+  for (let i = 0; i <= 2; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+    monthSet.add(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
+  }
+  const months = [...monthSet].sort();
+  const sel = document.getElementById('monthSelect');
+  sel.innerHTML = '';
+  months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    const [y, mo] = m.split('-');
+    const cnt = countByMonth[m] || 0;
+    opt.textContent = `${y}年${parseInt(mo,10)}月` + (cnt ? ` (提出${cnt}件)` : '（未提出）');
+    sel.appendChild(opt);
+  });
+  const withData = months.filter(m => countByMonth[m]);
+  activeMonth = withData[withData.length - 1] || `${now.getFullYear()}-${pad(now.getMonth() + 1)}`;
+  sel.value = activeMonth;
+}
+
+// ===== Renderers =====
+async function render() {
+  if (!activeMonth) return;
+  const [yStr, mStr] = activeMonth.split('-');
+  const year = parseInt(yStr, 10);
+  const month = parseInt(mStr, 10);
+  const monthRows = allRows.filter(r => r.monthKey === activeMonth);
+
+  document.getElementById('title').textContent = `${year}年${month}月 シフト表`;
+
+  document.querySelectorAll('section[id^="view-"]').forEach(s => s.classList.add('hidden'));
+  document.getElementById('view-' + activeTab).classList.remove('hidden');
+
+  if (activeTab === 'calendar') await renderCalendar(year, month);
+  else if (activeTab === 'staff') renderStaff(year, month, monthRows);
+  else if (activeTab === 'notes') renderNotes(monthRows);
+}
+
+// ===== Assignment store =====
+function loadAssignmentsFromLS(monthKey) {
+  try {
+    const raw = localStorage.getItem('assignments:' + monthKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+function saveAssignmentsToLS(monthKey) {
+  if (!assignments[monthKey]) return;
+  localStorage.setItem('assignments:' + monthKey, JSON.stringify(assignments[monthKey]));
+}
+function getDayAssignment(monthKey, day) {
+  const m = assignments[monthKey] || {};
+  const k = `${monthKey}-${pad(day)}`;
+  return m[k] || { andersen: [], cafe: [], shikomi: [], hatake: [] };
+}
+function setSlotStaff(monthKey, day, dept, names) {
+  if (!assignments[monthKey]) assignments[monthKey] = {};
+  const k = `${monthKey}-${pad(day)}`;
+  if (!assignments[monthKey][k]) assignments[monthKey][k] = { andersen: [], cafe: [], shikomi: [], hatake: [] };
+  assignments[monthKey][k][dept] = names;
+  saveAssignmentsToLS(monthKey);
+}
+async function ensureAssignmentsLoaded(monthKey) {
+  // 1) localStorage に既存があればそれを使う
+  const fromLS = loadAssignmentsFromLS(monthKey);
+  if (fromLS) { assignments[monthKey] = fromLS; return; }
+  // 2) スプシの【YYYY年M月】カレンダーシートから初期インポート
+  const weeks = await loadCalendarSheet(monthKey);
+  const imported = {};
+  if (weeks) {
+    weeks.forEach(w => {
+      w.days.forEach((day, di) => {
+        const date = w.dates[di];
+        if (!date) return;
+        imported[`${monthKey}-${pad(date)}`] = {
+          andersen: [...day.andersen],
+          cafe: [...day.cafe],
+          shikomi: [...day.shikomi],
+          hatake: [...day.hatake],
+        };
+      });
+    });
+  }
+  assignments[monthKey] = imported;
+  saveAssignmentsToLS(monthKey);
+}
+
+// ===== 月のカレンダー構造（週分割）を計算 =====
+function buildWeeksForMonth(year, month) {
+  const total = daysInMonth(year, month);
+  const firstDow = weekdayOf(year, month, 1);
+  const monStartDow = (firstDow + 6) % 7; // 月=0, 日=6 に変換
+  const weeks = [];
+  let cur = Array(monStartDow).fill(null);
+  for (let d = 1; d <= total; d++) {
+    cur.push(d);
+    if (cur.length === 7) { weeks.push(cur); cur = []; }
+  }
+  if (cur.length) { while (cur.length < 7) cur.push(null); weeks.push(cur); }
+  return weeks;
+}
+
+async function renderCalendar(year, month) {
+  const box = document.getElementById('calendarBox');
+  const monthKey = `${year}-${pad(month)}`;
+  box.innerHTML = '<div class="text-center text-slate-400 py-12 text-sm">カレンダー読み込み中…</div>';
+  await ensureAssignmentsLoaded(monthKey);
+
+  const weeks = buildWeeksForMonth(year, month);
+  let html = '<div class="week-grid">';
+  ['月','火','水','木','金','土','日'].forEach((d, i) => {
+    const cls = i === 5 ? 'dow-sat' : i === 6 ? 'dow-sun' : 'dow-mon';
+    html += `<div class="dow-header ${cls}">${d}</div>`;
+  });
+  html += '</div>';
+
+  weeks.forEach((days) => {
+    html += '<div class="week-grid week-row">';
+    days.forEach((date, di) => {
+      html += `<div class="day-cell-outer"><div class="day-cell-inner">`;
+      if (!date) {
+        html += '<div class="day-header day-empty"></div>';
+      } else {
+        const dowCls = di === 5 ? 'dow-sat' : di === 6 ? 'dow-sun' : '';
+        html += `<div class="day-header ${dowCls}">${date}</div>`;
+        const a = getDayAssignment(monthKey, date);
+        // アンデルセン + カフェ 横並び
+        html += '<div class="dept-split">';
+        html += `<div class="dept-cell dept-andersen">${slotHtml(date, 'andersen', a.andersen)}</div>`;
+        html += `<div class="dept-cell dept-cafe">${slotHtml(date, 'cafe', a.cafe)}</div>`;
+        html += '</div>';
+        // 仕込み・畑 横幅フル
+        html += `<div class="dept-shikomi">${slotHtml(date, 'shikomi', a.shikomi)}</div>`;
+        html += `<div class="dept-hatake">${slotHtml(date, 'hatake', a.hatake)}</div>`;
+      }
+      html += '</div></div>';
+    });
+    html += '</div>';
+  });
+
+  box.innerHTML = html;
+  document.getElementById('calendarOuter').classList.toggle('edit-mode', editMode);
+  document.getElementById('resetBtn').classList.toggle('hidden', !editMode);
+
+  // 編集モードのリスナー（イベント委譲）
+  box.onclick = (e) => {
+    const xEl = e.target.closest('.name-x');
+    if (xEl && editMode) {
+      const { day, dept, name } = xEl.dataset;
+      const cur = getDayAssignment(monthKey, +day)[dept];
+      setSlotStaff(monthKey, +day, dept, cur.filter(n => n !== name));
+      renderCalendar(year, month);
+      return;
+    }
+    const addEl = e.target.closest('.add-btn');
+    if (addEl && editMode) {
+      openPicker(monthKey, +addEl.dataset.day, addEl.dataset.dept);
+    }
+  };
+}
+
+function slotHtml(date, dept, names) {
+  let html = `<div class="dept-label">${DEPT_LABEL[dept]}</div>`;
+  names.forEach(n => {
+    html += `<div class="dept-name">${escapeHtml(n)}<span class="name-x" data-day="${date}" data-dept="${dept}" data-name="${escapeHtml(n)}">✕</span></div>`;
+  });
+  html += `<button class="add-btn" data-day="${date}" data-dept="${dept}">+ 追加</button>`;
+  return html;
+}
+
+// ===== Slot picker modal =====
+function openPicker(monthKey, day, dept) {
+  pickerTarget = { monthKey, day, dept };
+  const [y, m] = monthKey.split('-');
+  document.getElementById('slotTitle').textContent = `${parseInt(m,10)}月${day}日 / ${DEPT_LABEL[dept]}`;
+  const current = getDayAssignment(monthKey, day)[dept];
+  const dateStr = `${monthKey}-${pad(day)}`;
+
+  const list = document.getElementById('slotPicker');
+  list.innerHTML = '';
+  STAFF_MASTER.forEach(name => {
+    if (current.includes(name)) return; // 既に割当済みは除外
+    const row = allRows.find(r => r.name === name && r.monthKey === monthKey);
+    let badge = '';
+    if (!row) badge = '<span class="text-[10px] text-slate-400">未提出</span>';
+    else if (row.allOk) badge = '<span class="text-[10px] text-emerald-600">○ 全日可</span>';
+    else if (row.ngDates.includes(dateStr)) badge = '<span class="text-[10px] text-rose-500">不可申告</span>';
+    else badge = '<span class="text-[10px] text-emerald-600">○ 出勤可</span>';
+    const deptBadge = row?.dept ? `<span class="text-[10px] text-slate-500">/ ${escapeHtml(row.dept)}</span>` : '';
+
+    const btn = document.createElement('button');
+    btn.className = 'w-full text-left px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 flex items-center justify-between';
+    btn.innerHTML = `<span><span class="font-medium">${escapeHtml(name)}</span> ${deptBadge}</span>${badge}`;
+    btn.onclick = () => {
+      const cur = getDayAssignment(monthKey, day)[dept];
+      setSlotStaff(monthKey, day, dept, [...cur, name]);
+      closePicker();
+      const [yStr, mStr] = monthKey.split('-');
+      renderCalendar(+yStr, +mStr);
+    };
+    list.appendChild(btn);
+  });
+  document.getElementById('slotModal').classList.remove('hidden');
+}
+function closePicker() {
+  document.getElementById('slotModal').classList.add('hidden');
+  pickerTarget = null;
+}
+document.getElementById('slotClose').addEventListener('click', closePicker);
+document.getElementById('slotModal').addEventListener('click', e => {
+  if (e.target.id === 'slotModal') closePicker();
+});
+
+// ===== 編集モードトグル =====
+document.getElementById('editToggle').addEventListener('click', () => {
+  editMode = !editMode;
+  const btn = document.getElementById('editToggle');
+  btn.textContent = editMode ? '✓ 編集完了' : '✏️ 編集モード';
+  btn.classList.toggle('bg-slate-900', editMode);
+  btn.classList.toggle('text-white', editMode);
+  btn.classList.toggle('border-slate-900', editMode);
+  document.getElementById('calendarOuter').classList.toggle('edit-mode', editMode);
+  document.getElementById('resetBtn').classList.toggle('hidden', !editMode);
+});
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!confirm('localStorageの編集内容を破棄して、スプシから再インポートします。OK?')) return;
+  localStorage.removeItem('assignments:' + activeMonth);
+  delete assignments[activeMonth];
+  delete calendarCache[activeMonth];
+  await render();
+});
+
+function staffStatusFor(row, day) {
+  if (row.allOk) return 'OK';
+  const key = dateKey(row.year, row.month, day);
+  return row.ngDates.includes(key) ? 'OFF' : 'OK';
+}
+
+function renderStaff(year, month, rows) {
+  const total = daysInMonth(year, month);
+  if (rows.length === 0) {
+    document.getElementById('staffTable').innerHTML =
+      `<tbody><tr><td class="text-center text-slate-400 text-sm py-12">この月のシフト提出はまだありません</td></tr></tbody>`;
+    document.getElementById('staffSummary').textContent = '0 名';
+    return;
+  }
+  const sorted = rows.slice().sort((a, b) => {
+    if (a.dept !== b.dept) return (a.dept || 'zzz').localeCompare(b.dept || 'zzz', 'ja');
+    return a.name.localeCompare(b.name, 'ja');
+  });
+
+  let html = '<thead><tr>';
+  html += '<th class="sticky-corner px-2 py-2 text-left text-slate-600 font-medium min-w-[140px]">スタッフ</th>';
+  html += '<th class="sticky-top bg-white px-2 py-2 text-slate-600 font-medium min-w-[80px]">所属</th>';
+  for (let d = 1; d <= total; d++) {
+    const dow = weekdayOf(year, month, d);
+    const dowColor = dow === 0 ? 'text-rose-500' : dow === 6 ? 'text-sky-500' : 'text-slate-500';
+    html += `<th class="sticky-top bg-white px-1 py-2 font-normal min-w-[28px]">
+      <div class="text-slate-700 font-bold text-xs">${d}</div>
+      <div class="${dowColor} text-[9px]">${WEEKDAYS[dow]}</div>
+    </th>`;
+  }
+  html += '<th class="sticky-top bg-white px-2 py-2 text-slate-600 font-medium min-w-[60px]">可能日</th>';
+  html += '</tr></thead><tbody>';
+
+  sorted.forEach(r => {
+    let okCount = 0;
+    const deptCls = DEPT_COLOR[r.dept] || '';
+    html += '<tr>';
+    html += `<td class="sticky-left bg-white px-2 py-1.5 font-medium text-slate-800">${escapeHtml(r.name)}${r.note ? ' <span class="text-amber-500 text-[10px]" title="共有事項あり">📝</span>' : ''}</td>`;
+    html += `<td class="text-center"><span class="text-[10px] inline-block rounded px-1.5 py-0.5 ${deptCls}">${escapeHtml(r.dept) || '-'}</span></td>`;
+    for (let d = 1; d <= total; d++) {
+      const s = staffStatusFor(r, d);
+      if (s === 'OK') { okCount++; html += '<td class="ok-cell text-center text-[10px]">○</td>'; }
+      else            { html += '<td class="off-cell text-center text-[10px]">×</td>'; }
+    }
+    html += `<td class="text-center font-bold">${okCount}</td>`;
+    html += '</tr>';
+  });
+  html += '</tbody>';
+
+  document.getElementById('staffTable').innerHTML = html;
+  document.getElementById('staffSummary').textContent = `${sorted.length} 名提出済`;
+}
+
+function renderNotes(rows) {
+  const list = document.getElementById('notesList');
+  list.innerHTML = '';
+  const withNotes = rows.filter(r => r.note);
+  if (withNotes.length === 0) {
+    list.innerHTML = '<div class="text-slate-400 text-sm">この月の共有事項はありません</div>';
+    return;
+  }
+  withNotes.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'border-l-2 border-amber-300 pl-3';
+    item.innerHTML = `
+      <div class="font-medium text-slate-800">${escapeHtml(r.name)} <span class="text-xs text-slate-500">/ ${escapeHtml(r.dept)}</span></div>
+      <div class="text-slate-600 mt-0.5 whitespace-pre-wrap">${escapeHtml(r.note)}</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ===== Tabs =====
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeTab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      const sel = b === btn;
+      b.classList.toggle('border-slate-900', sel);
+      b.classList.toggle('text-slate-900', sel);
+      b.classList.toggle('border-transparent', !sel);
+      b.classList.toggle('text-slate-500', !sel);
+    });
+    render();
+  });
+});
+
+document.getElementById('monthSelect').addEventListener('change', e => {
+  activeMonth = e.target.value;
+  render();
+});
+document.getElementById('reloadBtn').addEventListener('click', async () => {
+  // cache clear して再フェッチ
+  Object.keys(calendarCache).forEach(k => delete calendarCache[k]);
+  await loadAll();
+});
+
+async function loadAll() {
+  const status = document.getElementById('status');
+  status.classList.remove('hidden');
+  status.textContent = 'データ取得中…';
+  try {
+    await loadSubmissions();
+    populateMonthSelector();
+    await render();
+    status.classList.add('hidden');
+    document.getElementById('dataMeta').textContent =
+      `元データ: ${allRows.length} 件 / 最終更新 ${new Date().toLocaleString('ja-JP')}`;
+  } catch (e) {
+    status.innerHTML = `<div class="text-rose-600">エラー: ${e.message}</div>`;
+    console.error(e);
+  }
+}
+
+loadAll();
+</script>
+
+</body>
+</html>

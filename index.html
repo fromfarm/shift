@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>シフト提出</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; }
+  .day-cell { transition: transform 0.08s ease, background-color 0.15s; user-select: none; }
+  .day-cell:not(.locked):active { transform: scale(0.95); }
+</style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+<div class="max-w-2xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
+
+  <header class="mb-4">
+    <h1 class="text-xl sm:text-2xl font-bold text-slate-900">シフト提出</h1>
+    <p class="text-xs text-slate-500 mt-1">出勤できない日をカレンダーでタップしてください</p>
+  </header>
+
+  <!-- 入力エリア -->
+  <div class="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 space-y-4">
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-medium text-slate-700">お名前 <span class="text-rose-500">*</span></label>
+        <select id="nameSelect" class="mt-1 block w-full border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white">
+          <option value="">選択してください</option>
+        </select>
+        <div id="deptBadge" class="mt-1.5 text-[10px]"></div>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-slate-700">何月分 <span class="text-rose-500">*</span></label>
+        <select id="monthSelect" class="mt-1 block w-full border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white"></select>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-medium text-slate-700">出勤できない日</label>
+        <button id="allOkBtn" type="button" class="text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg px-3 py-1 hover:bg-emerald-100">全日 出勤可</button>
+      </div>
+
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-2">
+        <div class="grid grid-cols-7 gap-1 mb-1">
+          <div class="text-center text-[10px] sm:text-xs font-medium text-rose-500 py-1">日</div>
+          <div class="text-center text-[10px] sm:text-xs font-medium text-slate-600 py-1">月</div>
+          <div class="text-center text-[10px] sm:text-xs font-medium text-slate-600 py-1">火</div>
+          <div class="text-center text-[10px] sm:text-xs font-medium text-slate-600 py-1">水</div>
+          <div class="text-center text-[10px] sm:text-xs font-medium text-slate-600 py-1">木</div>
+          <div class="text-center text-[10px] sm:text-xs font-medium text-slate-600 py-1">金</div>
+          <div class="text-center text-[10px] sm:text-xs font-medium text-sky-500 py-1">土</div>
+        </div>
+        <div id="calendar" class="grid grid-cols-7 gap-1"></div>
+      </div>
+
+      <div class="mt-2 text-xs text-slate-600 text-center">
+        出勤可能日：<span id="okCount" class="font-bold text-slate-900">0</span>日　／
+        出勤不可日：<span id="ngCount" class="font-bold text-rose-600">0</span>日
+        <span class="text-slate-400 ml-2">タップで切替</span>
+      </div>
+    </div>
+
+    <div>
+      <label class="text-xs font-medium text-slate-700">共有事項・要望（任意）</label>
+      <textarea id="note" rows="3" class="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="例：15日は午前のみ可能です"></textarea>
+    </div>
+
+    <button id="submitBtn" type="button" class="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed">
+      送信
+    </button>
+    <div id="msg" class="text-sm text-center"></div>
+  </div>
+
+  <p class="text-xs text-slate-400 text-center mt-4">
+    送信後も同じ画面で何度でも修正できます
+  </p>
+</div>
+
+<script>
+// ===== Staff master + 所属マッピング =====
+// 名前 → 所属。新人加入・配属変更時はここを編集
+const STAFF_MASTER = [
+  { name: '金子まさみ',   dept: 'カフェ' },
+  { name: '金子ちなみ',   dept: 'カフェ' },
+  { name: '入江さつき',   dept: 'カフェ' },
+  { name: '工藤優朔',     dept: '畑' },
+  { name: 'ママ',         dept: '仕込み' },
+  { name: '山口もとこ',   dept: '仕込み' },
+  { name: 'パパ',         dept: 'アンデルセン' },
+  { name: '鈴木ゆみ',     dept: 'アンデルセン' },
+  { name: '甲斐みゆき',   dept: 'アンデルセン' },
+  { name: '若山さき',     dept: 'カフェ' },
+  { name: '古賀くみこ',   dept: 'カフェ' },
+  { name: '竹村りえ',     dept: 'カフェ' },
+  { name: '相馬あんな',   dept: 'カフェ' },
+  { name: '知念ともみ',   dept: 'カフェ' },
+  { name: '小野寺くうは', dept: 'カフェ' },
+  { name: '小野寺やよい', dept: 'アンデルセン' },
+  { name: '河原崎みき',   dept: 'カフェ' },
+  { name: '伊藤光理',     dept: 'カフェ' },
+];
+const DEPT_COLOR = {
+  'アンデルセン': 'bg-pink-100 text-pink-800 border-pink-300',
+  'カフェ':       'bg-amber-100 text-amber-800 border-amber-300',
+  '仕込み':       'bg-emerald-100 text-emerald-800 border-emerald-300',
+  '畑':           'bg-lime-100 text-lime-800 border-lime-300',
+};
+// Apps Script Web App URL（本番）
+const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbz_9_FBvCiqpE6hEW_32hlqU19mrV7gZamw-JW91yLXCArnbHw5ilTpQPw9SyCuIjok/exec';
+
+// ===== Date helpers =====
+function pad(n) { return String(n).padStart(2,'0'); }
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+function firstWeekday(y, m) { return new Date(y, m-1, 1).getDay(); }
+
+// ===== State =====
+let ng = new Set();
+let currentMonth = null;  // 'YYYY-MM'
+
+// ===== UI: スタッフプルダウン =====
+const nameSelect = document.getElementById('nameSelect');
+STAFF_MASTER.forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s.name; opt.textContent = s.name;
+  nameSelect.appendChild(opt);
+});
+
+// 名前選択 → 所属バッジ表示
+function updateDeptBadge() {
+  const badge = document.getElementById('deptBadge');
+  const sel = STAFF_MASTER.find(s => s.name === nameSelect.value);
+  if (!sel) { badge.innerHTML = ''; return; }
+  const cls = DEPT_COLOR[sel.dept] || 'bg-slate-100 text-slate-700 border-slate-300';
+  badge.innerHTML = `所属：<span class="inline-block rounded px-1.5 py-0.5 border ${cls}">${sel.dept}</span>`;
+}
+nameSelect.addEventListener('change', updateDeptBadge);
+
+// ===== UI: 月プルダウン（現在月＋次2ヶ月） =====
+const monthSelect = document.getElementById('monthSelect');
+const now = new Date();
+for (let i = 0; i <= 2; i++) {
+  const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+  const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
+  const opt = document.createElement('option');
+  opt.value = v;
+  opt.textContent = `${d.getFullYear()}年${d.getMonth()+1}月`;
+  monthSelect.appendChild(opt);
+}
+currentMonth = monthSelect.value;
+
+// ===== Render calendar =====
+function renderCalendar() {
+  const [y, m] = currentMonth.split('-').map(Number);
+  const total = daysInMonth(y, m);
+  const offset = firstWeekday(y, m);
+  const cal = document.getElementById('calendar');
+  cal.innerHTML = '';
+  for (let i = 0; i < offset; i++) cal.appendChild(Object.assign(document.createElement('div'), { className: 'aspect-square' }));
+  for (let d = 1; d <= total; d++) {
+    const dow = (offset + d - 1) % 7;
+    const isNg = ng.has(d);
+    const cell = document.createElement('button');
+    cell.type = 'button';
+    const base = 'day-cell aspect-square rounded-md sm:rounded-lg border text-sm sm:text-base font-medium flex items-center justify-center';
+    const ngCls = isNg ? ' bg-rose-100 border-rose-300 text-rose-700 line-through' : ' bg-white border-slate-200 text-slate-700 hover:bg-slate-50';
+    const dowColor = dow === 0 ? ' !text-rose-600' : dow === 6 ? ' !text-sky-600' : '';
+    cell.className = base + ngCls + (isNg ? '' : dowColor);
+    cell.textContent = d;
+    cell.addEventListener('click', () => {
+      if (ng.has(d)) ng.delete(d); else ng.add(d);
+      renderCalendar();
+    });
+    cal.appendChild(cell);
+  }
+  // サマリ
+  document.getElementById('okCount').textContent = total - ng.size;
+  document.getElementById('ngCount').textContent = ng.size;
+}
+
+monthSelect.addEventListener('change', () => {
+  currentMonth = monthSelect.value;
+  ng = new Set(); // 月切替時にNGリセット
+  renderCalendar();
+});
+document.getElementById('allOkBtn').addEventListener('click', () => {
+  ng = new Set();
+  renderCalendar();
+});
+
+renderCalendar();
+
+// ===== Submit =====
+const submitBtn = document.getElementById('submitBtn');
+const msg = document.getElementById('msg');
+
+submitBtn.addEventListener('click', async () => {
+  const name = nameSelect.value;
+  if (!name) {
+    msg.innerHTML = '<span class="text-rose-600">お名前を選択してください</span>';
+    return;
+  }
+  const [y, m] = currentMonth.split('-').map(Number);
+  const staff = STAFF_MASTER.find(s => s.name === name);
+  const payload = {
+    name,
+    dept: staff?.dept || '',     // 所属（マスター由来、自動付与）
+    year: y,
+    month: m,
+    targetMonth: `${m}月`,
+    allOk: ng.size === 0,
+    ngDates: [...ng].sort((a,b) => a-b).map(d => `${y}-${pad(m)}-${pad(d)}`),
+    note: document.getElementById('note').value.trim(),
+    submittedAt: new Date().toISOString(),
+  };
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = '送信中…';
+  msg.innerHTML = '';
+
+  try {
+    if (SUBMIT_URL) {
+      // Apps Script Web App に送信
+      const res = await fetch(SUBMIT_URL, {
+        method: 'POST',
+        // Apps Scriptのdoes-not-need-preflight pattern
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+    } else {
+      // 未接続：localStorageに保存（テスト用）
+      const key = 'shift-submit-test';
+      const prev = JSON.parse(localStorage.getItem(key) || '[]');
+      prev.push(payload);
+      localStorage.setItem(key, JSON.stringify(prev));
+      await new Promise(r => setTimeout(r, 400));
+    }
+    msg.innerHTML = `<span class="text-emerald-600">✓ 送信しました（${m}月分・出勤不可${ng.size}日）</span>`;
+    if (!SUBMIT_URL) {
+      msg.innerHTML += '<br><span class="text-[10px] text-slate-400">※ テストモード（localStorage保存）</span>';
+    }
+  } catch (e) {
+    msg.innerHTML = `<span class="text-rose-600">送信失敗: ${e.message}</span>`;
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '送信';
+  }
+});
+</script>
+
+</body>
+</html>
