@@ -112,10 +112,6 @@
 
   <!-- Calendar view -->
   <section id="view-calendar" class="hidden">
-    <div class="flex items-center justify-end gap-2 mb-2">
-      <button id="resetBtn" class="hidden text-xs text-slate-500 hover:text-rose-600 underline">スプシから再インポート</button>
-      <button id="editToggle" class="text-xs bg-white border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50">✏️ 編集モード</button>
-    </div>
     <div id="calendarOuter" class="bg-white border border-slate-200 rounded-xl p-3 sm:p-5">
       <div id="calendarBox"></div>
     </div>
@@ -509,8 +505,6 @@ async function renderCalendar(year, month) {
   });
 
   box.innerHTML = html;
-  document.getElementById('calendarOuter').classList.toggle('edit-mode', editMode);
-  document.getElementById('resetBtn').classList.toggle('hidden', !editMode);
 
   // 編集モードのリスナー（イベント委譲）
   box.onclick = (e) => {
@@ -581,24 +575,7 @@ document.getElementById('slotModal').addEventListener('click', e => {
   if (e.target.id === 'slotModal') closePicker();
 });
 
-// ===== 編集モードトグル =====
-document.getElementById('editToggle').addEventListener('click', () => {
-  editMode = !editMode;
-  const btn = document.getElementById('editToggle');
-  btn.textContent = editMode ? '✓ 編集完了' : '✏️ 編集モード';
-  btn.classList.toggle('bg-slate-900', editMode);
-  btn.classList.toggle('text-white', editMode);
-  btn.classList.toggle('border-slate-900', editMode);
-  document.getElementById('calendarOuter').classList.toggle('edit-mode', editMode);
-  document.getElementById('resetBtn').classList.toggle('hidden', !editMode);
-});
-document.getElementById('resetBtn').addEventListener('click', async () => {
-  if (!confirm('localStorageの編集内容を破棄して、スプシから再インポートします。OK?')) return;
-  localStorage.removeItem('assignments:' + activeMonth);
-  delete assignments[activeMonth];
-  delete calendarCache[activeMonth];
-  await render();
-});
+// 編集モードUIは現在無効化（リスナー不要）
 
 function staffStatusFor(row, day) {
   if (row.allOk) return 'OK';
