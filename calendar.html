@@ -24,11 +24,12 @@
   .day-cell-inner { display: flex; flex-direction: column; height: 100%; }
   .day-header { padding: 4px 6px; font-weight: bold; font-size: 14px; text-align: center; border-bottom: 1px solid #e2e8f0; }
   .day-empty { color: #cbd5e1; }
-  .dept-split { display: grid; grid-template-columns: 1fr 1fr; }
+  .dept-split { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 auto; align-content: start; }
   .dept-cell { padding: 4px 5px; position: relative; }
   .dept-cell .dept-label { font-size: 10px; font-weight: 700; opacity: 0.7; margin-bottom: 2px; }
   .dept-cell .dept-name  { font-size: 11px; line-height: 1.35; color: #1e293b; display: inline-flex; align-items: center; gap: 2px; }
-  .dept-andersen { background: #fdf2f8; color: #9d174d; border-right: 1px solid #e2e8f0; }
+  .dept-split > .dept-cell:first-child { border-right: 1px solid #e2e8f0; }
+  .dept-andersen { background: #fdf2f8; color: #9d174d; }
   .dept-cafe     { background: #fffbeb; color: #92400e; }
   .dept-shikomi  { background: #ecfdf5; color: #047857; border-top: 1px solid #e2e8f0; padding: 4px 5px; position: relative; }
   .dept-hatake   { background: #f7fee7; color: #4d7c0f; border-top: 1px solid #e2e8f0; padding: 4px 5px; position: relative; }
@@ -462,8 +463,8 @@ async function renderCalendar(year, month) {
         const a = getDayAssignment(monthKey, date);
         // アンデルセン + カフェ 横並び
         html += '<div class="dept-split">';
-        html += `<div class="dept-cell dept-andersen">${slotHtml(date, 'andersen', a.andersen)}</div>`;
         html += `<div class="dept-cell dept-cafe">${slotHtml(date, 'cafe', a.cafe)}</div>`;
+        html += `<div class="dept-cell dept-andersen">${slotHtml(date, 'andersen', a.andersen)}</div>`;
         html += '</div>';
         // 仕込み・畑 横幅フル
         html += `<div class="dept-shikomi">${slotHtml(date, 'shikomi', a.shikomi)}</div>`;
@@ -603,7 +604,8 @@ function renderStaff(year, month, rows) {
     let okCount = 0;
     const deptCls = DEPT_COLOR[r.dept] || '';
     html += '<tr>';
-    html += `<td class="sticky-left bg-white px-2 py-1.5 font-medium text-slate-800">${escapeHtml(r.name)}${r.note ? ' <span class="text-amber-500 text-[10px]" title="共有事項あり">📝</span>' : ''}</td>`;
+    const noteAttr = r.note ? ` title="${escapeHtml(r.note)}" class="sticky-left bg-white px-2 py-1.5 font-medium text-slate-800 cursor-help"` : ' class="sticky-left bg-white px-2 py-1.5 font-medium text-slate-800"';
+    html += `<td${noteAttr}>${escapeHtml(r.name)}${r.note ? ' <span class="text-amber-500 text-[10px]">📝</span>' : ''}</td>`;
     html += `<td class="text-center"><span class="text-[10px] inline-block rounded px-1.5 py-0.5 ${deptCls}">${escapeHtml(r.dept) || '-'}</span></td>`;
     for (let d = 1; d <= total; d++) {
       const s = staffStatusFor(r, d);
