@@ -138,10 +138,10 @@ function updateDeptBadge() {
 }
 nameSelect.addEventListener('change', updateDeptBadge);
 
-// ===== UI: 月プルダウン（現在月＋次2ヶ月） =====
+// ===== UI: 月プルダウン（次月以降3ヶ月。当月分は提出済み想定） =====
 const monthSelect = document.getElementById('monthSelect');
 const now = new Date();
-for (let i = 0; i <= 2; i++) {
+for (let i = 1; i <= 3; i++) {
   const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
   const v = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
   const opt = document.createElement('option');
