@@ -29,7 +29,6 @@
         <select id="nameSelect" class="mt-1 block w-full border border-slate-300 rounded-lg px-2 py-2 text-sm bg-white">
           <option value="">選択してください</option>
         </select>
-        <div id="deptBadge" class="mt-1.5 text-[10px]"></div>
       </div>
       <div>
         <label class="text-xs font-medium text-slate-700">何月分 <span class="text-rose-500">*</span></label>
@@ -74,9 +73,6 @@
     <div id="msg" class="text-sm text-center"></div>
   </div>
 
-  <p class="text-xs text-slate-400 text-center mt-4">
-    送信後も同じ画面で何度でも修正できます
-  </p>
 </div>
 
 <script>
@@ -128,15 +124,7 @@ STAFF_MASTER.forEach(s => {
   nameSelect.appendChild(opt);
 });
 
-// 名前選択 → 所属バッジ表示
-function updateDeptBadge() {
-  const badge = document.getElementById('deptBadge');
-  const sel = STAFF_MASTER.find(s => s.name === nameSelect.value);
-  if (!sel) { badge.innerHTML = ''; return; }
-  const cls = DEPT_COLOR[sel.dept] || 'bg-slate-100 text-slate-700 border-slate-300';
-  badge.innerHTML = `所属：<span class="inline-block rounded px-1.5 py-0.5 border ${cls}">${sel.dept}</span>`;
-}
-nameSelect.addEventListener('change', updateDeptBadge);
+// 所属は送信payloadには含めるが、画面には表示しない
 
 // ===== UI: 月プルダウン（次月以降3ヶ月。当月分は提出済み想定） =====
 const monthSelect = document.getElementById('monthSelect');
