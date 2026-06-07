@@ -47,6 +47,39 @@
   .add-btn { display: none; background: rgba(255,255,255,0.7); border: 1px dashed currentColor; border-radius: 3px; padding: 1px 6px; font-size: 10px; cursor: pointer; margin-top: 2px; }
   .add-btn:hover { background: rgba(255,255,255,1); }
   .edit-mode .add-btn { display: inline-block; }
+  /* スタッフ名ホバーで共有事項ツールチップ */
+  .has-note { cursor: help; position: relative; }
+  .has-note:hover::after {
+    content: attr(data-note);
+    position: absolute;
+    left: 100%;
+    top: 0;
+    margin-left: 8px;
+    z-index: 50;
+    background: #1e293b;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: normal;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    width: max-content;
+    max-width: 360px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    pointer-events: none;
+  }
+  .has-note:hover::before {
+    content: '';
+    position: absolute;
+    left: 100%;
+    top: 12px;
+    margin-left: 2px;
+    border: 6px solid transparent;
+    border-right-color: #1e293b;
+    z-index: 51;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -604,8 +637,9 @@ function renderStaff(year, month, rows) {
     let okCount = 0;
     const deptCls = DEPT_COLOR[r.dept] || '';
     html += '<tr>';
-    const noteAttr = r.note ? ` title="${escapeHtml(r.note)}" class="sticky-left bg-white px-2 py-1.5 font-medium text-slate-800 cursor-help"` : ' class="sticky-left bg-white px-2 py-1.5 font-medium text-slate-800"';
-    html += `<td${noteAttr}>${escapeHtml(r.name)}${r.note ? ' <span class="text-amber-500 text-[10px]">📝</span>' : ''}</td>`;
+    const noteCls = r.note ? 'sticky-left bg-white px-2 py-1.5 font-medium text-slate-800 has-note' : 'sticky-left bg-white px-2 py-1.5 font-medium text-slate-800';
+    const noteAttr = r.note ? ` data-note="${escapeHtml(r.note)}"` : '';
+    html += `<td class="${noteCls}"${noteAttr}>${escapeHtml(r.name)}${r.note ? ' <span class="text-amber-500 text-xs">📝</span>' : ''}</td>`;
     html += `<td class="text-center"><span class="text-[10px] inline-block rounded px-1.5 py-0.5 ${deptCls}">${escapeHtml(r.dept) || '-'}</span></td>`;
     for (let d = 1; d <= total; d++) {
       const s = staffStatusFor(r, d);
