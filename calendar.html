@@ -6,7 +6,13 @@
 <title>シフト表</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
-  body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; }
+  :root {
+    --andersen-bg: #fce7f3; --andersen-fg: #9f1239; --andersen-accent: #ec4899;
+    --cafe-bg:     #fef3c7; --cafe-fg:     #92400e; --cafe-accent:     #f59e0b;
+    --shikomi-bg:  #d1fae5; --shikomi-fg:  #065f46; --shikomi-accent:  #10b981;
+    --hatake-bg:   #ecfccb; --hatake-fg:   #3f6212; --hatake-accent:   #84cc16;
+  }
+  body { font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif; background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%); }
   table { border-collapse: separate; border-spacing: 0; }
   th, td { border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
   thead th { border-top: 1px solid #e2e8f0; }
@@ -18,28 +24,49 @@
   .off-cell { background: #fef2f2; color: #b91c1c; }
   .none-cell { background: #f8fafc; color: #cbd5e1; }
 
+  /* タブ */
+  .tab-btn { font-size: 15px; padding: 10px 18px; border-bottom: 3px solid transparent; transition: color .15s, border-color .15s; }
+  .tab-btn[data-active="true"] { border-bottom-color: #0f172a; color: #0f172a; }
+
   /* 週グリッドカレンダー */
   .week-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-  .day-cell-outer { border-left: 1px solid #cbd5e1; border-top: 1px solid #cbd5e1; min-height: 200px; background: white; }
+  .day-cell-outer { border-left: 1px solid #cbd5e1; border-top: 1px solid #cbd5e1; min-height: 230px; background: white; }
   .day-cell-inner { display: flex; flex-direction: column; height: 100%; }
-  .day-header { padding: 4px 6px; font-weight: bold; font-size: 14px; text-align: center; border-bottom: 1px solid #e2e8f0; }
+  .day-header { padding: 8px 10px; font-weight: 800; font-size: 18px; text-align: center; border-bottom: 1px solid #e2e8f0; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+  .day-header .day-dow { font-size: 12px; font-weight: 600; opacity: 0.7; }
   .day-empty { color: #cbd5e1; }
   .dept-split { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 auto; align-content: start; }
-  .dept-cell { padding: 4px 5px; position: relative; }
-  .dept-cell .dept-label { font-size: 10px; font-weight: 700; opacity: 0.7; margin-bottom: 2px; }
-  .dept-cell .dept-name  { font-size: 11px; line-height: 1.35; color: #1e293b; display: inline-flex; align-items: center; gap: 2px; }
-  .dept-split > .dept-cell:first-child { border-right: 1px solid #e2e8f0; }
-  .dept-andersen { background: #fdf2f8; color: #9d174d; }
-  .dept-cafe     { background: #fffbeb; color: #92400e; }
-  .dept-shikomi  { background: #ecfdf5; color: #047857; border-top: 1px solid #e2e8f0; padding: 4px 5px; position: relative; }
-  .dept-hatake   { background: #f7fee7; color: #4d7c0f; border-top: 1px solid #e2e8f0; padding: 4px 5px; position: relative; }
-  .dept-shikomi .dept-label, .dept-hatake .dept-label { font-size: 10px; font-weight: 700; opacity: 0.7; margin-bottom: 2px; }
-  .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 11px; line-height: 1.35; color: #1e293b; display: inline-flex; align-items: center; gap: 2px; }
-  .dow-header { background: #f8fafc; border: 1px solid #cbd5e1; border-bottom: 0; padding: 6px; text-align: center; font-weight: 700; font-size: 13px; }
+  .dept-cell { padding: 8px 10px; position: relative; }
+  .dept-cell .dept-label { font-size: 11px; font-weight: 800; opacity: 0.75; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .dept-cell .dept-name  { font-size: 14px; line-height: 1.45; color: #0f172a; display: block; margin-top: 2px; font-weight: 500; }
+  .dept-split > .dept-cell:first-child { border-right: 1px solid rgba(0,0,0,0.06); }
+  .dept-andersen { background: var(--andersen-bg); color: var(--andersen-fg); border-left: 3px solid var(--andersen-accent); }
+  .dept-cafe     { background: var(--cafe-bg);     color: var(--cafe-fg);     border-left: 3px solid var(--cafe-accent); }
+  .dept-shikomi  { background: var(--shikomi-bg);  color: var(--shikomi-fg);  border-top: 1px solid rgba(0,0,0,0.06); padding: 8px 10px; position: relative; border-left: 3px solid var(--shikomi-accent); }
+  .dept-hatake   { background: var(--hatake-bg);   color: var(--hatake-fg);   border-top: 1px solid rgba(0,0,0,0.06); padding: 8px 10px; position: relative; border-left: 3px solid var(--hatake-accent); }
+  .dept-shikomi .dept-label, .dept-hatake .dept-label { font-size: 11px; font-weight: 800; opacity: 0.75; margin-bottom: 4px; letter-spacing: 0.5px; }
+  .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 14px; line-height: 1.45; color: #0f172a; display: block; margin-top: 2px; font-weight: 500; }
+  .dow-header { background: white; border: 1px solid #cbd5e1; border-bottom: 0; padding: 10px; text-align: center; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
   .dow-mon, .dow-tue, .dow-wed, .dow-thu, .dow-fri { color: #334155; }
   .dow-sat { color: #0284c7; }
   .dow-sun { color: #dc2626; }
   .week-row { border-right: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
+
+  /* 通常時は day-dow を隠す（デスクトップでは曜日ヘッダー行で十分） */
+  .day-dow { display: none; }
+
+  /* ===== モバイル：縦リスト化 ===== */
+  @media (max-width: 768px) {
+    .week-grid { grid-template-columns: 1fr; gap: 12px; }
+    .dow-row { display: none; }
+    .day-cell-outer { border: 1px solid #cbd5e1; border-radius: 14px; overflow: hidden; box-shadow: 0 1px 3px rgba(15,23,42,0.06); min-height: 0; }
+    .week-row { border: none; }
+    .day-dow { display: inline; }
+    .day-header { padding: 12px 14px; font-size: 20px; justify-content: flex-start; background: #f8fafc; }
+    .dept-cell { padding: 10px 14px; }
+    .dept-shikomi, .dept-hatake { padding: 10px 14px; }
+    .dept-cell .dept-name, .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 15px; }
+  }
   /* 編集モード */
   .edit-mode .name-x { display: inline-block; margin-left: 1px; cursor: pointer; color: rgba(0,0,0,0.3); font-size: 9px; }
   .edit-mode .name-x:hover { color: #dc2626; }
@@ -87,25 +114,28 @@
 <div class="max-w-[1600px] mx-auto px-4 py-6">
 
   <!-- Header -->
-  <header class="flex items-end justify-between flex-wrap gap-3 mb-5">
-    <div>
-      <div class="text-xs text-slate-500 uppercase tracking-wider">shift view</div>
-      <h1 class="text-2xl font-bold text-slate-900 mt-1" id="title">シフト表</h1>
-      <div class="text-xs text-slate-500 mt-1" id="dataMeta"></div>
+  <header class="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 sm:p-6 mb-5">
+    <div class="flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-slate-900 text-white flex items-center justify-center text-xl">📅</div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-bold text-slate-900 leading-tight" id="title">シフト表</h1>
+          <div class="text-xs text-slate-500 mt-0.5" id="dataMeta"></div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 flex-wrap">
+        <select id="monthSelect" class="border border-slate-300 rounded-xl px-4 py-2 text-sm font-medium bg-white hover:bg-slate-50 cursor-pointer min-w-[140px]"></select>
+        <button id="reloadBtn" title="最新データを取得" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm hover:bg-slate-50">↻</button>
+      </div>
     </div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <label class="text-xs text-slate-500">表示月：</label>
-      <select id="monthSelect" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"></select>
-      <button id="reloadBtn" class="text-xs bg-white border border-slate-300 rounded-lg px-3 py-1.5 hover:bg-slate-50">↻ 最新データ取得</button>
+
+    <!-- Tabs -->
+    <div class="flex gap-1 mt-5 -mb-1 border-b border-slate-200">
+      <button data-tab="calendar" data-active="true" class="tab-btn font-medium">📋 カレンダー</button>
+      <button data-tab="staff" data-active="false" class="tab-btn text-slate-500 hover:text-slate-700 font-medium">👥 スタッフ別</button>
+      <button data-tab="notes" data-active="false" class="tab-btn text-slate-500 hover:text-slate-700 font-medium">💬 共有事項</button>
     </div>
   </header>
-
-  <!-- Tabs -->
-  <div class="flex border-b border-slate-200 mb-4">
-    <button data-tab="calendar" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-slate-900 text-slate-900">カレンダー</button>
-    <button data-tab="staff" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">スタッフ別一覧</button>
-    <button data-tab="notes" class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700">共有事項</button>
-  </div>
 
   <!-- Status -->
   <div id="status" class="text-sm text-slate-500 py-8 text-center">データ取得中…</div>
@@ -149,8 +179,7 @@
   </section>
 
   <p class="text-xs text-slate-400 text-center mt-6">
-    カレンダー：初回はスプシから自動インポート、以降はブラウザに保存（編集モードで割当変更）<br>
-    スタッフ別一覧・共有事項：「元データ」から自動生成
+    スプシ「元データ」と「【YYYY年M月】カレンダー」を直接読み込み・自動表示
   </p>
 </div>
 
@@ -473,8 +502,9 @@ async function renderCalendar(year, month) {
   await ensureAssignmentsLoaded(monthKey);
 
   const weeks = buildWeeksForMonth(year, month);
-  let html = '<div class="week-grid">';
-  ['月','火','水','木','金','土','日'].forEach((d, i) => {
+  const dowLabels = ['月','火','水','木','金','土','日'];
+  let html = '<div class="week-grid dow-row">';
+  dowLabels.forEach((d, i) => {
     const cls = i === 5 ? 'dow-sat' : i === 6 ? 'dow-sun' : 'dow-mon';
     html += `<div class="dow-header ${cls}">${d}</div>`;
   });
@@ -488,7 +518,7 @@ async function renderCalendar(year, month) {
         html += '<div class="day-header day-empty"></div>';
       } else {
         const dowCls = di === 5 ? 'dow-sat' : di === 6 ? 'dow-sun' : '';
-        html += `<div class="day-header ${dowCls}">${date}</div>`;
+        html += `<div class="day-header ${dowCls}">${date}<span class="day-dow">${dowLabels[di]}</span></div>`;
         const a = getDayAssignment(monthKey, date);
         // アンデルセン + カフェ 横並び
         html += '<div class="dept-split">';
@@ -657,9 +687,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     activeTab = btn.dataset.tab;
     document.querySelectorAll('.tab-btn').forEach(b => {
       const sel = b === btn;
-      b.classList.toggle('border-slate-900', sel);
-      b.classList.toggle('text-slate-900', sel);
-      b.classList.toggle('border-transparent', !sel);
+      b.dataset.active = sel ? 'true' : 'false';
       b.classList.toggle('text-slate-500', !sel);
     });
     render();
