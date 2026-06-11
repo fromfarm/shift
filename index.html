@@ -91,6 +91,12 @@
       <textarea id="note" rows="3" class="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="例：15日は午前のみ可能です"></textarea>
     </div>
 
+    <div>
+      <label class="text-xs font-medium text-slate-700">メールアドレス（任意）</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" class="mt-1 block w-full border border-slate-300 rounded-lg px-3 py-2 text-sm" placeholder="後で内容を見返したい方は入力">
+      <p class="text-[10px] text-slate-400 mt-1">入力すると、提出内容を確認メールでお送りします</p>
+    </div>
+
     <button id="submitBtn" type="button" class="w-full bg-slate-900 text-white py-3 rounded-lg font-medium hover:bg-slate-800 disabled:bg-slate-300 disabled:cursor-not-allowed">
       送信
     </button>
@@ -222,6 +228,7 @@ submitBtn.addEventListener('click', async () => {
   const payload = {
     name,
     dept: staff?.dept || '',     // 所属（マスター由来、自動付与）
+    email: document.getElementById('email').value.trim(),  // 任意
     year: y,
     month: m,
     targetMonth: `${m}月`,
