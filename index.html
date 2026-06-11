@@ -292,8 +292,9 @@ submitBtn.addEventListener('click', async () => {
         </div>`
       : '';
     document.getElementById('successSummary').innerHTML =
-      `<b class="text-slate-900">${escapeHtml(name)}</b> さんの <b class="text-slate-900">${m}月分</b> シフトを受け付けました<br>` +
-      `<span class="text-sm text-slate-500 mt-1 inline-block">出勤可能：<b class="text-emerald-700">${okDays}日</b> ／ 出勤不可：<b class="text-rose-600">${ng.size}日</b></span>` +
+      `<div class="text-xl font-bold text-slate-900">${escapeHtml(name)} さん</div>` +
+      `<div class="text-lg font-bold text-slate-900 mt-1">${m}月分 シフトを受け付けました</div>` +
+      `<div class="text-sm text-slate-500 mt-2">出勤可能：<b class="text-emerald-700">${okDays}日</b> ／ 出勤不可：<b class="text-rose-600">${ng.size}日</b></div>` +
       ngHtml + noteHtml;
     msg.innerHTML = '';
     window.scrollTo({ top: 0, behavior: 'smooth' });
