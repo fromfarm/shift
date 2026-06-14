@@ -38,14 +38,14 @@
   .dept-split { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 auto; align-content: start; }
   .dept-cell { padding: 8px 10px; position: relative; }
   .dept-cell .dept-label { font-size: 11px; font-weight: 800; opacity: 0.75; margin-bottom: 4px; letter-spacing: 0.5px; }
-  .dept-cell .dept-name  { font-size: 14px; line-height: 1.45; color: #0f172a; display: block; margin-top: 2px; font-weight: 500; }
+  .dept-cell .dept-name  { font-size: 14px; line-height: 1.45; color: #0f172a; display: block; margin-top: 2px; font-weight: 500; word-break: keep-all; overflow-wrap: normal; }
   .dept-split > .dept-cell:first-child { border-right: 1px solid rgba(0,0,0,0.06); }
   .dept-andersen { background: var(--andersen-bg); color: var(--andersen-fg); border-left: 3px solid var(--andersen-accent); }
   .dept-cafe     { background: var(--cafe-bg);     color: var(--cafe-fg);     border-left: 3px solid var(--cafe-accent); }
   .dept-shikomi  { background: var(--shikomi-bg);  color: var(--shikomi-fg);  border-top: 1px solid rgba(0,0,0,0.06); padding: 8px 10px; position: relative; border-left: 3px solid var(--shikomi-accent); }
   .dept-hatake   { background: var(--hatake-bg);   color: var(--hatake-fg);   border-top: 1px solid rgba(0,0,0,0.06); padding: 8px 10px; position: relative; border-left: 3px solid var(--hatake-accent); }
   .dept-shikomi .dept-label, .dept-hatake .dept-label { font-size: 11px; font-weight: 800; opacity: 0.75; margin-bottom: 4px; letter-spacing: 0.5px; }
-  .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 14px; line-height: 1.45; color: #0f172a; display: block; margin-top: 2px; font-weight: 500; }
+  .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 14px; line-height: 1.45; color: #0f172a; display: block; margin-top: 2px; font-weight: 500; word-break: keep-all; overflow-wrap: normal; }
   .dow-header { background: white; border: 1px solid #cbd5e1; border-bottom: 0; padding: 10px; text-align: center; font-weight: 700; font-size: 14px; letter-spacing: 1px; }
   .dow-mon, .dow-tue, .dow-wed, .dow-thu, .dow-fri { color: #334155; }
   .dow-sat { color: #0284c7; }
