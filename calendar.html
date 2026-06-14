@@ -247,7 +247,7 @@
   </section>
 
   <p class="text-xs text-slate-400 text-center mt-6">
-    スプシ「元データ」と「【YYYY年M月】カレンダー」を直接読み込み・自動表示
+    スプシ「元データ」を直接読み込んで自動表示
   </p>
 </div>
 
@@ -565,27 +565,7 @@ function weeksHasContent(weeks) {
 }
 
 async function ensureAssignmentsLoaded(monthKey) {
-  // 1) スプシの【YYYY年M月】カレンダーシートから取得を試行
-  const weeks = await loadCalendarSheet(monthKey);
-  if (weeks && weeksHasContent(weeks)) {
-    const imported = {};
-    weeks.forEach(w => {
-      w.days.forEach((day, di) => {
-        const date = w.dates[di];
-        if (!date) return;
-        imported[`${monthKey}-${pad(date)}`] = {
-          andersen: [...day.andersen],
-          cafe: [...day.cafe],
-          shikomi: [...day.shikomi],
-          hatake: [...day.hatake],
-        };
-      });
-    });
-    assignments[monthKey] = imported;
-    calendarSource[monthKey] = 'spreadsheet';
-    return;
-  }
-  // 2) スプシのカレンダーシート無 → 元データから自動生成（出勤可能日ベース）
+  // 元データの「出勤可能日」から自動生成
   assignments[monthKey] = deriveAssignmentsFromSubmissions(monthKey);
   calendarSource[monthKey] = 'auto';
 }
@@ -613,11 +593,7 @@ async function renderCalendar(year, month) {
 
   const weeks = buildWeeksForMonth(year, month);
   const dowLabels = ['月','火','水','木','金','土','日'];
-  let html = '';
-  if (calendarSource[monthKey] === 'auto') {
-    html += '<div class="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-900">📋 スプシの<b>「【'+year+'年'+month+'月】カレンダー」</b>シートが未作成のため、<b>元データの「出勤可能日」</b>から自動表示しています。管理者が割当決めたらスプシのシートを作成してください。</div>';
-  }
-  html += '<div class="week-grid dow-row">';
+  let html = '<div class="week-grid dow-row">';
   dowLabels.forEach((d, i) => {
     const cls = i === 5 ? 'dow-sat' : i === 6 ? 'dow-sun' : 'dow-mon';
     html += `<div class="dow-header ${cls}">${d}</div>`;
