@@ -366,6 +366,17 @@ async function loadSubmissions() {
   });
 }
 
+// 同一名前×同一月の重複は最新（後の行）だけ採用するヘルパ
+// カレンダー・スタッフ別一覧で使用。共有事項では使わず全件残す。
+function dedupLatest(rows) {
+  const latestByKey = new Map();
+  rows.forEach(r => {
+    if (!r.monthKey) return;
+    latestByKey.set(`${r.name}::${r.monthKey}`, r);
+  });
+  return [...latestByKey.values()];
+}
+
 // ===== カレンダーシート fetch & parse =====
 async function loadCalendarSheet(monthKey) {
   if (calendarCache[monthKey]) return calendarCache[monthKey];
@@ -498,8 +509,8 @@ async function render() {
   document.getElementById('view-' + activeTab).classList.remove('hidden');
 
   if (activeTab === 'calendar') await renderCalendar(year, month);
-  else if (activeTab === 'staff') renderStaff(year, month, monthRows);
-  else if (activeTab === 'notes') renderNotes(monthRows);
+  else if (activeTab === 'staff') renderStaff(year, month, dedupLatest(monthRows)); // 同月の重複は最新だけ
+  else if (activeTab === 'notes') renderNotes(monthRows); // 共有事項は重複もそのまま全件表示
 }
 
 // ===== Assignment store =====
@@ -540,7 +551,7 @@ function deriveAssignmentsFromSubmissions(monthKey) {
   const y = parseInt(yStr, 10);
   const m = parseInt(mStr, 10);
   const total = daysInMonth(y, m);
-  const subs = allRows.filter(r => r.monthKey === monthKey);
+  const subs = dedupLatest(allRows.filter(r => r.monthKey === monthKey));
   const map = {};
   for (let d = 1; d <= total; d++) {
     const dayKey = `${monthKey}-${pad(d)}`;
