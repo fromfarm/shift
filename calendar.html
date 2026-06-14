@@ -148,6 +148,21 @@
     padding: 1px 6px;
     border-radius: 999px;
   }
+  .note-dept-warn {
+    font-size: 10px;
+    color: #b91c1c;
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-weight: 600;
+  }
+  .bubble-empty {
+    background: #fef3c7 !important;
+    border-color: #fde68a !important;
+    color: #92400e;
+    font-style: italic;
+  }
   .note-bubble {
     position: relative;
     display: inline-block;
@@ -766,10 +781,19 @@ function renderStaff(year, month, rows) {
 function renderNotes(rows) {
   const list = document.getElementById('notesList');
   list.innerHTML = '';
-  const withNotes = rows.filter(r => r.note);
-  if (withNotes.length === 0) {
+  // 共有事項あり OR 所属未設定（管理者が後で埋める必要あり）の提出を表示
+  const targetRows = rows.filter(r => r.note || !r.dept);
+  if (targetRows.length === 0) {
     list.innerHTML = '<div class="text-slate-400 text-sm py-12 text-center">この月の共有事項はありません</div>';
     return;
+  }
+  // 所属未設定の件数バナー
+  const warnCount = targetRows.filter(r => !r.dept).length;
+  if (warnCount > 0) {
+    const banner = document.createElement('div');
+    banner.className = 'mb-4 px-3 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-800';
+    banner.innerHTML = `⚠️ <b>所属未設定の提出が ${warnCount} 件あります</b>。元データシートのAL列（所属）を手動で埋めるとカレンダーに反映されます。`;
+    list.appendChild(banner);
   }
   const deptColor = {
     'アンデルセン': '#ec4899',
@@ -777,16 +801,22 @@ function renderNotes(rows) {
     '仕込み':       '#10b981',
     '畑':           '#84cc16',
   };
-  withNotes.forEach(r => {
+  targetRows.forEach(r => {
     const initial = r.name ? r.name.charAt(0) : '?';
-    const bg = deptColor[r.dept] || '#64748b';
+    const bg = r.dept ? (deptColor[r.dept] || '#64748b') : '#ef4444';  // 所属未設定は赤
+    const deptBadge = r.dept
+      ? `<span class="note-dept">${escapeHtml(r.dept)}</span>`
+      : `<span class="note-dept-warn">⚠️ 所属未設定</span>`;
+    const bubbleContent = r.note
+      ? `<div class="note-bubble">${escapeHtml(r.note)}</div>`
+      : `<div class="note-bubble bubble-empty">（共有事項なし）</div>`;
     const item = document.createElement('div');
     item.className = 'note-row';
     item.innerHTML = `
       <div class="note-avatar" style="background:${bg}">${escapeHtml(initial)}</div>
       <div class="note-content">
-        <div class="note-name">${escapeHtml(r.name)}${r.dept ? `<span class="note-dept">${escapeHtml(r.dept)}</span>` : ''}</div>
-        <div class="note-bubble">${escapeHtml(r.note)}</div>
+        <div class="note-name">${escapeHtml(r.name)}${deptBadge}</div>
+        ${bubbleContent}
       </div>
     `;
     list.appendChild(item);
