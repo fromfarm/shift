@@ -193,32 +193,43 @@
 
   /* ===== 印刷用 ===== */
   @media print {
-    @page { size: A4 landscape; margin: 10mm; }
-    body { background: white !important; }
+    @page { size: A4 landscape; margin: 6mm; }
+    html, body { background: white !important; }
+    body { font-size: 9px !important; }
     .no-print { display: none !important; }
-    header { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 8mm !important; }
+    /* ヘッダーを最小化 */
+    header { box-shadow: none !important; border: none !important; padding: 0 !important; margin-bottom: 3mm !important; background: white !important; border-radius: 0 !important; }
+    header > div:first-child { gap: 8px !important; }
+    header .w-11 { width: 28px !important; height: 28px !important; font-size: 14px !important; }
     .tab-btn { display: none !important; }
+    #dataMeta { display: none !important; }
     section[id^="view-"].hidden { display: none !important; }
-    h1#title { font-size: 24px !important; }
-    #dataMeta { font-size: 11px !important; color: #64748b !important; }
-    /* カレンダーセル */
-    .day-cell-outer { min-height: 130px !important; page-break-inside: avoid; }
-    .day-header { padding: 4px 6px !important; font-size: 13px !important; }
-    .dept-cell { padding: 4px 5px !important; }
-    .dept-cell .dept-label, .dept-shikomi .dept-label, .dept-hatake .dept-label { font-size: 9px !important; margin-bottom: 1px !important; }
-    .dept-cell .dept-name, .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 11px !important; line-height: 1.3 !important; }
-    .dept-shikomi, .dept-hatake { padding: 4px 5px !important; }
-    .dow-header { padding: 4px !important; font-size: 12px !important; }
+    h1#title { font-size: 18px !important; }
+    /* カレンダーセル：可変高で隙間ゼロに */
+    .day-cell-outer { min-height: 0 !important; height: auto !important; page-break-inside: avoid; }
+    .day-header { padding: 2px 4px !important; font-size: 10px !important; border-bottom: 1px solid #e2e8f0 !important; }
+    .day-header .day-dow { font-size: 8px !important; }
+    .dept-cell { padding: 2px 4px !important; }
+    .dept-shikomi, .dept-hatake { padding: 2px 4px !important; }
+    .dept-cell .dept-label, .dept-shikomi .dept-label, .dept-hatake .dept-label { font-size: 7px !important; margin-bottom: 0 !important; letter-spacing: 0 !important; }
+    .dept-cell .dept-name, .dept-shikomi .dept-name, .dept-hatake .dept-name { font-size: 9px !important; line-height: 1.18 !important; margin-top: 0 !important; }
+    .dow-header { padding: 3px !important; font-size: 10px !important; letter-spacing: 0 !important; }
     .week-row { page-break-inside: avoid; }
+    .week-grid { border-collapse: collapse; }
+    /* 部門アクセントバー細く */
+    .dept-andersen, .dept-cafe, .dept-shikomi, .dept-hatake { border-left-width: 2px !important; }
     /* 色を確実に印刷 */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     /* 月セレクタを値だけ表示 */
-    #monthSelect { appearance: none !important; -webkit-appearance: none !important; border: none !important; padding: 0 !important; background: transparent !important; font-size: 18px !important; font-weight: 700 !important; color: #0f172a !important; }
+    #monthSelect { appearance: none !important; -webkit-appearance: none !important; border: none !important; padding: 0 !important; background: transparent !important; font-size: 16px !important; font-weight: 700 !important; color: #0f172a !important; min-width: 0 !important; }
+    /* カレンダー外側パディング縮小 */
+    #calendarOuter { padding: 0 !important; border: none !important; }
+    .max-w-\[1600px\] { padding: 0 !important; max-width: 100% !important; }
     /* スタッフ別一覧 */
-    #staffTable th, #staffTable td { font-size: 10px !important; }
+    #staffTable th, #staffTable td { font-size: 9px !important; padding: 2px 3px !important; }
     /* 共有事項 */
     .note-bubble { box-shadow: none !important; }
-    .note-row { page-break-inside: avoid; }
+    .note-row { page-break-inside: avoid; margin-bottom: 8px !important; }
   }
 </style>
 </head>
